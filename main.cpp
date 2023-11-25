@@ -57,21 +57,35 @@ bool checkTriangleInequality(vector<Constraint> &constraints){
   // Find the triangles
   for (unsigned int i=0; i<n; i++){
     for (Constraint neighbor: neighbors[i]){
-      unsigned int id_neigbor = (neighbor.id1-1 == i) ? neighbor.id2-1 : neighbor.id1-1;
-      for (Constraint neighbor2: neighbors[id_neigbor]){
-        unsigned int id_neigbor2 = (neighbor2.id1-1 == id_neigbor) ? neighbor2.id2-1 : neighbor2.id1-1;
-        if (id_neigbor2 == i){
-          // We have a triangle
-          Interval d1 = neighbor.distance;
-          Interval d2 = neighbor2.distance;
-          Interval d3 = neighbors[i][0].distance;
-          if (d1.ub() + d2.ub() < d3.lb()){
-            return false;
+      unsigned int id_neighbor = (neighbor.id1-1 == i) ? neighbor.id2-1 : neighbor.id1-1;
+      for (Constraint neighbor2: neighbors[id_neighbor]){
+        unsigned int id_neighbor2 = (neighbor2.id1-1 == id_neighbor) ? neighbor2.id2-1 : neighbor2.id1-1;
+        if (id_neighbor2 == i) // Avoid the same point
+          continue;
+        bool triangle_exists = false;
+        for (Constraint neighbor3: neighbors[id_neighbor2]){
+          unsigned int id_neighbor3 = (neighbor3.id1-1 == id_neighbor2) ? neighbor3.id2-1 : neighbor3.id1-1;
+          if (id_neighbor3 == i){
+            // Check the triangle inequality
+            Interval d1 = neighbor.distance;
+            Interval d2 = neighbor2.distance;
+            Interval d3 = neighbor3.distance;
+            if (d1.lb() > d2.ub()+d3.ub() || d2.lb() > d1.ub()+d3.ub() || d3.lb() > d1.ub()+d2.ub())
+              return false;
+            triangle_exists = true;
           }
+        }
+        if (!triangle_exists){
+          // Add the triangle constraint
+          Constraint triangle_constraint;
+          triangle_constraint.id1 = i+1;
+          triangle_constraint.id2 = id_neighbor2+1;
+          triangle_constraint.distance = Interval(0, neighbor.distance.ub()+neighbor2.distance.ub());
+          constraints.push_back(triangle_constraint);
+        }
         }
       }
     }
-  }
   return true;
 }
     
@@ -169,17 +183,24 @@ void branchAndContract(IntervalVector start_interval, vector<Constraint> constra
 }
 
 int main(int argc, char** argv) {
-  // vector<Constraint> constraints = readConstraintFromFile("dgsol-1.3/data/data_set_1/graph.01.data");
-  // cout << "Read " << constraints.size() << " constraints" << endl;
-  // cout << "Checking triangle inequality..." << endl;
-  // if (!checkTriangleInequality(constraints)){
-  //   cout << "Triangle inequality is violated" << endl;
-  //   exit(1);
+  vector<Constraint> constraints = readConstraintFromFile("dgsol-1.3/data/data_set_1/graph.01.data");
+  cout << "Read " << constraints.size() << " constraints" << endl;
+  cout << "Checking triangle inequality..." << endl;
+  if (!checkTriangleInequality(constraints)){
+    cout << "Triangle inequality is violated" << endl;
+    exit(1);
+  }
+  cout << "Triangle inequality is satisfied" << endl;
+  cout << "New constraints size: " << constraints.size() << endl;
+  // Print all the constraints
+  // for (unsigned int i=0; i<constraints.size(); i++){
+  //   Constraint c = constraints[i];
+  //   cout << c.id1 << " " << c.id2 << " " << c.distance << endl;
   // }
-  vector<Constraint> constraints = {Constraint({0, 1, Interval(1.2, 1.3)}), Constraint({0, 2, Interval(2.4, 2.5)}), Constraint({1, 2, Interval(1.6, 1.7)})};
-  double TAU = 0.01;
-  IntervalVector start_sol_interval = IntervalVector({Interval(0).inflate(0.001), Interval(0).inflate(0.001), Interval(1.25).inflate(0.001), Interval(0).inflate(0.001), Interval(1.976).inflate(0.001), Interval(1.448).inflate(0.001)});
+  // vector<Constraint> constraints = {Constraint({0, 1, Interval(1.2, 1.3)}), Constraint({0, 2, Interval(2.4, 2.5)}), Constraint({1, 2, Interval(1.6, 1.7)})};
+  // double TAU = 0.01;
+  // IntervalVector start_sol_interval = IntervalVector({Interval(0).inflate(0.001), Interval(0).inflate(0.001), Interval(1.25).inflate(0.001), Interval(0).inflate(0.001), Interval(1.976).inflate(0.001), Interval(1.448).inflate(0.001)});
   // IntervalVector start_interval = IntervalVector({Interval(0, 0.1), Interval(0, 0.1), Interval(1.225, 1.275), Interval(0, 0.1), Interval(-10, 10), Interval(-10, 10)});
   // IntervalVector big_start_interval = IntervalVector({Interval(0, 0.1), Interval(0, 0.1), Interval(-10, 10), Interval(-10, 10), Interval(-10, 10), Interval(-10, 10)});
-  branchAndContract(start_sol_interval, constraints, TAU);
+  // branchAndContract(start_sol_interval, constraints, TAU);
 }
