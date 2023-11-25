@@ -91,15 +91,17 @@ bool checkTriangleInequality(vector<Constraint> &constraints){
     
 
 bool ConstraintIn(IntervalVector input_intervals, vector<Constraint> dist_constraints){
-  Variable x1, y1, x2, y2;
-  Function dist(x1, y1, x2, y2, sqrt(sqr(x1-x2)+sqr(y1-y2)),"dist");
+  Variable x1, y1, z1, x2, y2, z2;
+  Function dist(x1, y1, z1, x2, y2, z2, sqrt(sqr(x1-x2)+sqr(y1-y2)+sqr(z1-z2)),"dist");
   for (unsigned int i=0; i<dist_constraints.size(); i++){
     Constraint c = dist_constraints[i];
-    Interval xa = input_intervals[c.id1*2];
-    Interval ya = input_intervals[c.id1*2+1];
-    Interval xb = input_intervals[c.id2*2];
-    Interval yb = input_intervals[c.id2*2+1];
-    Interval d = dist.eval(IntervalVector({xa, ya, xb, yb}));
+    Interval xa = input_intervals[c.id1*3];
+    Interval ya = input_intervals[c.id1*3+1];
+    Interval za = input_intervals[c.id1*3+2];
+    Interval xb = input_intervals[c.id2*3];
+    Interval yb = input_intervals[c.id2*3+1];
+    Interval zb = input_intervals[c.id2*3+2];
+    Interval d = dist.eval(IntervalVector({xa, ya, za, xb, yb, zb}));
     if (!d.is_subset(c.distance)){
       return false;
     }
@@ -108,15 +110,17 @@ bool ConstraintIn(IntervalVector input_intervals, vector<Constraint> dist_constr
 }
 
 bool ConstraintOut(IntervalVector input_intervals, vector<Constraint> dist_constraints){
-  Variable x1, y1, x2, y2;
-  Function dist(x1, y1, x2, y2, sqrt(sqr(x1-x2)+sqr(y1-y2)),"dist");
+  Variable x1, y1, z1, x2, y2, z2;
+  Function dist(x1, y1, z1, x2, y2, z2, sqrt(sqr(x1-x2)+sqr(y1-y2)+sqr(z1-z2)),"dist");
   for (unsigned int i=0; i<dist_constraints.size(); i++){
     Constraint c = dist_constraints[i];
-    Interval xa = input_intervals[c.id1*2];
-    Interval ya = input_intervals[c.id1*2+1];
-    Interval xb = input_intervals[c.id2*2];
-    Interval yb = input_intervals[c.id2*2+1];
-    Interval d = dist.eval(IntervalVector({xa, ya, xb, yb}));
+    Interval xa = input_intervals[c.id1*3];
+    Interval ya = input_intervals[c.id1*3+1];
+    Interval za = input_intervals[c.id1*3+2];
+    Interval xb = input_intervals[c.id2*3];
+    Interval yb = input_intervals[c.id2*3+1];
+    Interval zb = input_intervals[c.id2*3+2];
+    Interval d = dist.eval(IntervalVector({xa, ya, za, xb, yb, zb}));
     if (d.is_disjoint(c.distance)){
       return true;
     }
@@ -131,12 +135,12 @@ void branchAndContract(IntervalVector start_interval, vector<Constraint> constra
   stack<IntervalVector> stack_rej;
   stack<IntervalVector> stack_unc;
   // Create distance function
-  Variable x1, y1, x2, y2;
-  Function dist(x1, y1, x2, y2, sqrt(sqr(x1-x2)+sqr(y1-y2)),"dist");
+  Variable x1, y1, z1, x2, y2, z2;
+  Function dist(x1, y1, z1, x2, y2, z2, sqrt(sqr(x1-x2)+sqr(y1-y2)+sqr(z1-z2)),"dist");
   // Create the contractor
   Array<Ctc> contractors(0);
   for (auto constraint: constraints){
-    contractors.add(*new CtcFwdBwd(*new NumConstraint(x1, y1, x2, y2, dist(x1, y1, x2, y2)=constraint.distance)));
+    contractors.add(*new CtcFwdBwd(*new NumConstraint(x1, y1, z1, x2, y2, z2, dist(x1, y1, z1, x2, y2, z2)=constraint.distance)));
   }
   CtcUnion ctc(contractors);
   cout << "Contractor created" << endl;
