@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 
-#define DEBUG 0
+#define DEBUG 0 
 
 using namespace std;
 using namespace ibex;
@@ -307,7 +307,7 @@ IntervalVector InitializeIntervals(vector<Constraint> constraints, double tau){
   double max_dist = 0;
   for (unsigned int i=0; i<constraints.size(); i++){
     Constraint c = constraints[i];
-    max_dist += c.distance.diam();
+    max_dist += c.distance.ub();
   }
   // Initialize the rest of the points
   for (unsigned int i=0; i<n; i++){
@@ -329,7 +329,7 @@ int main(int argc, char** argv) {
   vector<Constraint> constraints = readConstraintFromFile(filename);
   cout << "Read " << constraints.size() << " constraints" << endl;
   cout << "Initializing intervals..." << endl;
-  double TAU = 0.1;
+  double TAU = 0.01;
   IntervalVector start_interval = InitializeIntervals(constraints, TAU);
   cout << "Intervals initialized" << endl;
   cout << "Checking triangle inequality..." << endl;
