@@ -2,6 +2,8 @@
 #include <iostream>
 #include <vector>
 
+#define DEBUG 0
+
 using namespace std;
 using namespace ibex;
 
@@ -29,7 +31,7 @@ vector<Constraint> readConstraintFromFile(string filename){
     Constraint c;
     c.id1 = id1;
     c.id2 = id2;
-    c.distance = Interval(-lb, ub); // Weird here: negative for lower bound 
+    c.distance = Interval(lb, ub); // Weird here: negative for lower bound 
     constraints.push_back(c);
   }
   file.close();
@@ -101,12 +103,12 @@ bool ConstraintIn(IntervalVector input_intervals, vector<Constraint> dist_constr
   Function dist(x1, y1, z1, x2, y2, z2, sqrt(sqr(x1-x2)+sqr(y1-y2)+sqr(z1-z2)),"dist");
   for (unsigned int i=0; i<dist_constraints.size(); i++){
     Constraint c = dist_constraints[i];
-    Interval xa = input_intervals[c.id1*3];
-    Interval ya = input_intervals[c.id1*3+1];
-    Interval za = input_intervals[c.id1*3+2];
-    Interval xb = input_intervals[c.id2*3];
-    Interval yb = input_intervals[c.id2*3+1];
-    Interval zb = input_intervals[c.id2*3+2];
+    Interval xa = input_intervals[(c.id1-1)*3];
+    Interval ya = input_intervals[(c.id1-1)*3+1];
+    Interval za = input_intervals[(c.id1-1)*3+2];
+    Interval xb = input_intervals[(c.id2-1)*3];
+    Interval yb = input_intervals[(c.id2-1)*3+1];
+    Interval zb = input_intervals[(c.id2-1)*3+2];
     Interval d = dist.eval(IntervalVector({xa, ya, za, xb, yb, zb}));
     if (!d.is_subset(c.distance)){
       return false;
@@ -120,13 +122,25 @@ bool ConstraintOut(IntervalVector input_intervals, vector<Constraint> dist_const
   Function dist(x1, y1, z1, x2, y2, z2, sqrt(sqr(x1-x2)+sqr(y1-y2)+sqr(z1-z2)),"dist");
   for (unsigned int i=0; i<dist_constraints.size(); i++){
     Constraint c = dist_constraints[i];
-    Interval xa = input_intervals[c.id1*3];
-    Interval ya = input_intervals[c.id1*3+1];
-    Interval za = input_intervals[c.id1*3+2];
-    Interval xb = input_intervals[c.id2*3];
-    Interval yb = input_intervals[c.id2*3+1];
-    Interval zb = input_intervals[c.id2*3+2];
+    Interval xa = input_intervals[(c.id1-1)*3];
+    Interval ya = input_intervals[(c.id1-1)*3+1];
+    Interval za = input_intervals[(c.id1-1)*3+2];
+    Interval xb = input_intervals[(c.id2-1)*3];
+    Interval yb = input_intervals[(c.id2-1)*3+1];
+    Interval zb = input_intervals[(c.id2-1)*3+2];
     Interval d = dist.eval(IntervalVector({xa, ya, za, xb, yb, zb}));
+    if (DEBUG){
+      cout << "xa: " << xa << endl;
+      cout << "ya: " << ya << endl;
+      cout << "za: " << za << endl;
+      cout << "xb: " << xb << endl;
+      cout << "yb: " << yb << endl;
+      cout << "zb: " << zb << endl;
+      cout << "c.id1: " << c.id1 << endl;
+      cout << "c.id2: " << c.id2 << endl;
+      cout << "d: " << d << endl;
+      cout << "c.distance: " << c.distance << endl;
+    }
     if (d.is_disjoint(c.distance)){
       return true;
     }
@@ -253,13 +267,41 @@ IntervalVector InitializeIntervals(vector<Constraint> constraints, double tau){
   start_interval[id2*3+1] = Interval(0).inflate(tau/2);
   start_interval[id2*3+2] = Interval(0).inflate(tau/2);
 
-  // Intersection of two circles
-  double coeff1 = 1/2;
+  double coeff1 = 1.0/2.0;
   Interval coeff2 = (d13*d13 - d23*d23)/(2*d12*d12);
-  Interval coeff3 = (1/2)*sqrt(2*(d13*d13+d23*d23)/(d12*d12) - (d13*d13-d23*d23)*(d13*d13-d23*d23)/(d12*d12*d12*d12) - 1);
-  start_interval[id3*3] = coeff1*(start_interval[id1*3] + start_interval[id2*3]) + coeff2*(start_interval[id2*3] - start_interval[id1*3]) + coeff3*(start_interval[id2*3+1] - start_interval[id1*3+1]);
-  start_interval[id3*3+1] = coeff1*(start_interval[id1*3+1] + start_interval[id2*3+1]) + coeff2*(start_interval[id2*3+1] - start_interval[id1*3+1]) + coeff3*(start_interval[id1*3] - start_interval[id2*3]);
-  start_interval[id3*3+2] = Interval(0).inflate(tau/2);
+  Interval coeff3 = (1.0/2.0)*sqrt(2*(d13*d13+d23*d23)/(d12*d12) - (d13*d13-d23*d23)*(d13*d13-d23*d23)/(d12*d12*d12*d12) - 1);
+  if (DEBUG){
+    start_interval[id3*3] = Interval(-1, 10);
+    start_interval[id3*3+1] = Interval(-1, 10);
+    start_interval[id3*3+2] = Interval(0).inflate(tau/2);
+  }
+  else{
+    // Intersection of two circles
+    start_interval[id3*3] = coeff1*(start_interval[id1*3] + start_interval[id2*3]) + coeff2*(start_interval[id2*3] - start_interval[id1*3]) + coeff3*(start_interval[id2*3+1] - start_interval[id1*3+1]);
+    start_interval[id3*3+1] = coeff1*(start_interval[id1*3+1] + start_interval[id2*3+1]) + coeff2*(start_interval[id2*3+1] - start_interval[id1*3+1]) + coeff3*(start_interval[id1*3] - start_interval[id2*3]);
+    start_interval[id3*3+2] = Interval(0).inflate(tau/2);
+  }
+
+  if (DEBUG){
+    cout << "id1: " << id1 << endl;
+    cout << "id2: " << id2 << endl;
+    cout << "id3: " << id3 << endl;
+    cout << "d12: " << d12 << endl;
+    cout << "d13: " << d13 << endl;
+    cout << "d23: " << d23 << endl;
+    cout << "coeff1: " << coeff1 << endl;
+    cout << "coeff2: " << coeff2 << endl;
+    cout << "coeff3: " << coeff3 << endl;
+    cout << "start_interval[id1*3]: " << start_interval[id1*3] << endl;
+    cout << "start_interval[id1*3+1]: " << start_interval[id1*3+1] << endl;
+    cout << "start_interval[id1*3+2]: " << start_interval[id1*3+2] << endl;
+    cout << "start_interval[id2*3]: " << start_interval[id2*3] << endl;
+    cout << "start_interval[id2*3+1]: " << start_interval[id2*3+1] << endl;
+    cout << "start_interval[id2*3+2]: " << start_interval[id2*3+2] << endl;
+    cout << "start_interval[id3*3]: " << start_interval[id3*3] << endl;
+    cout << "start_interval[id3*3+1]: " << start_interval[id3*3+1] << endl;
+    cout << "start_interval[id3*3+2]: " << start_interval[id3*3+2] << endl;
+  }
 
   // Sum all the distances in the constraint
   double max_dist = 0;
@@ -279,7 +321,12 @@ IntervalVector InitializeIntervals(vector<Constraint> constraints, double tau){
 }
 
 int main(int argc, char** argv) {
-  vector<Constraint> constraints = readConstraintFromFile("dgsol-1.3/data/data_set_1/graph.01.data");
+  if (argc != 2){
+    cout << "Usage: ./main <filename>" << endl;
+    exit(1);
+  }
+  string filename = argv[1];
+  vector<Constraint> constraints = readConstraintFromFile(filename);
   cout << "Read " << constraints.size() << " constraints" << endl;
   cout << "Initializing intervals..." << endl;
   double TAU = 0.1;
