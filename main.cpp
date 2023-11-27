@@ -282,6 +282,7 @@ IntervalVector InitializeIntervals(vector<Constraint> constraints, double tau){
     start_interval[id3*3+2] = Interval(0).inflate(tau/2);
   }
 
+
   if (DEBUG){
     cout << "id1: " << id1 << endl;
     cout << "id2: " << id2 << endl;
@@ -313,9 +314,21 @@ IntervalVector InitializeIntervals(vector<Constraint> constraints, double tau){
   for (unsigned int i=0; i<n; i++){
     if (i == id1 || i == id2 || i == id3)
       continue;
-    start_interval[i*3] = Interval(0).inflate(max_dist/2);
-    start_interval[i*3+1] = Interval(0).inflate(max_dist/2);
-    start_interval[i*3+2] = Interval(0).inflate(max_dist/2);
+    start_interval[i*3] = Interval(0).inflate(max_dist);
+    start_interval[i*3+1] = Interval(0).inflate(max_dist);
+    start_interval[i*3+2] = Interval(0).inflate(max_dist);
+  }
+  if (n > 3){
+    // Take another point and force it to be in a specific semi-space
+    unsigned int id4 = 0;
+    for (unsigned int i=0; i<n; i++){
+      if (i == id1 || i == id2 || i == id3)
+        continue;
+      id4 = i;
+      break;
+    }
+    start_interval[id4*3+2] = Interval(0, max_dist);
+
   }
   return start_interval;
 }
@@ -329,7 +342,7 @@ int main(int argc, char** argv) {
   vector<Constraint> constraints = readConstraintFromFile(filename);
   cout << "Read " << constraints.size() << " constraints" << endl;
   cout << "Initializing intervals..." << endl;
-  double TAU = 0.01;
+  double TAU = 0.1;
   IntervalVector start_interval = InitializeIntervals(constraints, TAU);
   cout << "Intervals initialized" << endl;
   cout << "Checking triangle inequality..." << endl;
@@ -342,15 +355,4 @@ int main(int argc, char** argv) {
   cout << "Starting branch and contract..." << endl;
   branchAndContract(start_interval, constraints, TAU);
   cout << "Branch and contract finished" << endl;
-  // Print all the constraints
-  // for (unsigned int i=0; i<constraints.size(); i++){
-  //   Constraint c = constraints[i];
-  //   cout << c.id1 << " " << c.id2 << " " << c.distance << endl;
-  // }
-  // vector<Constraint> constraints = {Constraint({0, 1, Interval(1.2, 1.3)}), Constraint({0, 2, Interval(2.4, 2.5)}), Constraint({1, 2, Interval(1.6, 1.7)})};
-  // double TAU = 0.01;
-  // IntervalVector start_sol_interval = IntervalVector({Interval(0).inflate(0.001), Interval(0).inflate(0.001), Interval(1.25).inflate(0.001), Interval(0).inflate(0.001), Interval(1.976).inflate(0.001), Interval(1.448).inflate(0.001)});
-  // IntervalVector start_interval = IntervalVector({Interval(0, 0.1), Interval(0, 0.1), Interval(1.225, 1.275), Interval(0, 0.1), Interval(-10, 10), Interval(-10, 10)});
-  // IntervalVector big_start_interval = IntervalVector({Interval(0, 0.1), Interval(0, 0.1), Interval(-10, 10), Interval(-10, 10), Interval(-10, 10), Interval(-10, 10)});
-  // branchAndContract(start_sol_interval, constraints, TAU);
 }
